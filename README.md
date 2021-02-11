@@ -2,16 +2,20 @@
 
 #### A terraform module for laying out IP subnets
 
-This module is *mostly* a wrapper for Hashicorp's
-[terraform-cidr-subnets](https://github.com/hashicorp/terraform-cidr-subnets),
-but it's a little easier to use and it packs IPv4 subnets of varying sizes
-reasonably across multiple availability zones using a user-specified 
-aggregation/summarization strategy. The number of subnets planned by this module
-is the product of the availability zone count and the named network count.
+This module is *mostly* a wrapper for [Martin Atkins](https://github.com/apparentlymart)
+/ Hashicorp's
+[terraform-cidr-subnets](https://github.com/hashicorp/terraform-cidr-subnets)
+with the following benefits:
+- It's a little easier to use (`new_bits` is a brain-bender for me because it's
+based on the VPC CIDR allocation size, rather than the desired subnet outcome.)
+- IPv4 subnets of varying sizes get packed reasonably across multiple
+availability zones according to a user-selectable aggregation/summarization
+strategy.
 
-No resources are created by this module. Rather, it provides an output that is
-appropriate for use in something like an `aws_subnet` resource block with the
-`for_each` meta-argument.
+No resources are created by this module. Rather, it provides an outputs 
+appropriate for use in something like an `aws_subnet` resource block's
+`for_each` meta-argument. The number of subnets planned by this module is the
+product of the counts of availability zones and named networks.
 
 #### Example usage
 
