@@ -45,7 +45,7 @@ locals {
 module "base_networks" {
   source  = "hashicorp/subnets/cidr"
   version = "1.0.0"
-  summary_cidr_block = var.cidr_block
+  base_cidr_block = var.cidr_block
   networks = [ for i in range(length(local.base_network_bits)) : {name = local.base_network_names[i], new_bits = local.base_network_bits[i]} ]
 }
 
@@ -56,6 +56,6 @@ module "subnet_networks" {
   for_each = module.base_networks.network_cidr_blocks
   source  = "hashicorp/subnets/cidr"
   version = "1.0.0"
-  summary_cidr_block = each.value
+  base_cidr_block = each.value
   networks = [ for i in range(length(local.subnet_network_bits)) : {name = local.subnet_network_names[i], new_bits = local.subnet_network_bits[i]} ]
 }
