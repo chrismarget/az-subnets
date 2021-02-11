@@ -1,6 +1,6 @@
 ## az-subnets
 
-####A terraform module for determining IP subnets across multiple availability
+#### A terraform module for determining IP subnets across multiple availability
 zones.
 
 This module is *mostly* a wrapper for Hashicorp's
