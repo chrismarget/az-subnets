@@ -11,7 +11,7 @@ locals {
   // This is because of an requirement of the cidrsubnets() function called by
   // the underlying hashicorp/subnets/cidr module. Long story short, there's no
   // point in using this module with a single availability zone.
-  az_bits = max(ceil(log(length(var.az), 2)), 1)
+  az_bits = max(ceil(log(length(var.az_list), 2)), 1)
 
   // calculate required host bits for each named subnet, taking into account AWS
   // and ordinary network overhead.
@@ -19,16 +19,16 @@ locals {
 
   // bit count required for each type of outer network container. Only one of
   // these will be used, depending on the value of var.az_priority.
-  base_network_bits_by_az = [ for i in range(length(var.az)) : local.az_bits ]
+  base_network_bits_by_az = [ for i in range(length(var.az_list)) : local.az_bits ]
   base_network_bits_by_subnet = [ for bits in local.host_bits_by_subnet : (32 - local.vpc_cidr_bits - local.az_bits - bits) ]
 
   // list of names / bits of network summary wrappers
   base_network_bits = var.az_priority ? local.base_network_bits_by_az : local.base_network_bits_by_subnet
-  base_network_names = var.az_priority ? var.az : var.networks[*].name
+  base_network_names = var.az_priority ? var.az_list : var.networks[*].name
 
   // list of names / bits of inner network specific subnets
   subnet_network_bits = var.az_priority ? local.base_network_bits_by_subnet: local.base_network_bits_by_az
-  subnet_network_names = var.az_priority ? var.networks[*].name : var.az
+  subnet_network_names = var.az_priority ? var.networks[*].name : var.az_list
 
   // output will be by "az" and "subnet" regardless of which is the inner/outer
   // wrapper. set the labels accordingly.

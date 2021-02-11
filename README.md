@@ -22,7 +22,7 @@ the counts of availability zones and named networks.
 ````
 module "subnets" {
   source     = "github.com/chrismarget/az-subnets"
-  az         = ["us-east-2a", "us-east-2b"]
+  az_list    = ["us-east-2a", "us-east-2b"]
   cidr_block = "172.21.0.0/20"
   networks   = [
                  { name = "web_tier",  hosts = 10 },
@@ -107,7 +107,7 @@ Input:
 ```
 module "subnets" {
   source      = "github.com/chrismarget/az-subnets"
-  az          = ["us-east-2a", "us-east-2b"]
+  az_list     = ["us-east-2a", "us-east-2b"]
   az_priority = true
   cidr_block  = "172.21.0.0/20"
   networks    = [
