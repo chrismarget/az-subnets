@@ -88,13 +88,15 @@ subnets = [
 ]
 
 ```
+#### `az_priority` packing mode
 
 The packing behavior changes when the `az_priority` variable is set to `true`
-(default: `false`). In that case, the supplied `cidr_block` is first *evenly
-divided* (subject to CIDR powers-of-two limitations) among the availability
-zones. Individual subnets are then densely packed within each per-az allocation:
+(default: `false`). In that case, the `base_cidr_blocks` now represent
+availability zones, rather than per-name network aggregates which span
+availability zones. Each zone gets an evenly divided (subject to CIDR
+powers-of-two limitations) slice of the supplied `cidr_block`. Individual
+subnets are then densely packed within these per-az allocations:
 
-#### `az_priority` packing example
 Input:
 ```
 module "subnets" {
