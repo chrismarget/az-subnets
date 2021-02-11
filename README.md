@@ -1,10 +1,10 @@
 ## az-subnets
 
-#### A terraform module for laying out IP subnets.
+#### A terraform module for laying out IP subnets
 
 This module is *mostly* a wrapper for Hashicorp's
 [terraform-cidr-subnets](https://github.com/hashicorp/terraform-cidr-subnets),
-but it's a little easier to use, and it packs IPv4 subnets reasonably across
+but it's a little easier to use and it packs IPv4 subnets reasonably across
 multiple availability zones using one of two possible strategies.
 
 No resources are created by this module. Rather, it provides an output that is
@@ -25,11 +25,10 @@ module "subnets" {
                ]
 }
 ````
-
-With these inputs the module will begin by slicing three *minimally sized*
-chunks from the provided `cidr_block`, each just big enough to hold all
-instances (one per availability zone) of each network. That result appears in
-the `base_cidr_blocks` output:
+With these inputs the module begins by slicing three *minimally sized* chunks
+(`base_cidr_blocks`) from the provided `cidr_block`. Each chunk is just big
+enough to hold all instances (one per availability zone) of each network. The
+result appears in the `base_cidr_blocks` output:
 ```
 base_cidr_blocks = {
   "app_tier" = "172.21.0.128/25"
@@ -46,10 +45,10 @@ an AWS /26 (64 hosts) due to AWS reserving 5 addresses per subnet. Accordingly,
 a /25 (two /26s) was allocated for `app_tier`
 
 This is an example of the default subnet packing behavior which seeks to place
-all instances of related subnets into adjacent address space to simplify policy
-expressions on routers/firewalls/etc... which might benefit from being able to
-refer to all instances of a particular service with a single expression. See
-`az_priority` to change this behavior.
+all instances of related subnets into adjacent address space. This placement
+strategy simplifies writing policy expressions on routers/firewalls/etc... which
+might benefit from being able to refer to all instances of a particular service
+with a single expression. See the `az_priority` switch to change this behavior.
 
 Each member of `base_cidr_blocks` is further subdivided into individual subnets,
 available via the `subnets` output:
@@ -91,9 +90,9 @@ subnets = [
 ```
 
 The packing behavior changes when the `az_priority` variable is set to `true`
-(default `false`): In that case, the supplied `cidr_block` is first *evenly
+(default: `false`). In that case, the supplied `cidr_block` is first *evenly
 divided* (subject to CIDR powers-of-two limitations) among the availability
-zones. Individual subnets are then densely packed within the per-az allocations:
+zones. Individual subnets are then densely packed within each per-az allocation:
 
 #### `az_priority` packing example
 Input:
