@@ -4,8 +4,10 @@
 
 This module is *mostly* a wrapper for Hashicorp's
 [terraform-cidr-subnets](https://github.com/hashicorp/terraform-cidr-subnets),
-but it's a little easier to use and it packs IPv4 subnets reasonably across
-multiple availability zones using one of two possible strategies.
+but it's a little easier to use and it packs IPv4 subnets of varying sizes
+reasonably across multiple availability zones using a user-specified 
+aggregation/summarization strategy. The number of subnets planned by this module
+is the product of the availability zone count and the named network count.
 
 No resources are created by this module. Rather, it provides an output that is
 appropriate for use in something like an `aws_subnet` resource block with the
@@ -26,11 +28,11 @@ module "subnets" {
 }
 ````
 With these inputs the module begins by slicing three *minimally sized* chunks
-(`base_cidr_blocks`) from the provided `cidr_block`. Each chunk is just big
+(`summary_cidr_blocks`) from the provided `cidr_block`. Each chunk is just big
 enough to hold all instances (one per availability zone) of each network. The
-result appears in the `base_cidr_blocks` output:
+result appears in the `summary_cidr_blocks` output:
 ```
-base_cidr_blocks = {
+summary_cidr_blocks = {
   "app_tier" = "172.21.0.128/25"
   "auth_tier" = "172.21.1.0/28"
   "web_tier" = "172.21.0.0/27"
@@ -44,13 +46,7 @@ The `app_tier` network indicated a requirement for 28 hosts, which only fits in
 an AWS /26 (64 hosts) due to AWS reserving 5 addresses per subnet. Accordingly,
 a /25 (two /26s) was allocated for `app_tier`
 
-This is an example of the default subnet packing behavior which seeks to place
-all instances of related subnets into adjacent address space. This placement
-strategy simplifies writing policy expressions on routers/firewalls/etc... which
-might benefit from being able to refer to all instances of a particular service
-with a single expression. See the `az_priority` switch to change this behavior.
-
-Each member of `base_cidr_blocks` is further subdivided into individual subnets,
+Each member of `summary_cidr_blocks` is further subdivided into individual subnets,
 available via the `subnets` output:
 
 ```
@@ -88,10 +84,16 @@ subnets = [
 ]
 
 ```
+This is an example of the default subnet packing behavior which seeks to place
+all instances of related subnets into adjacent address space. This placement
+strategy simplifies writing policy expressions on routers/firewalls/etc... which
+might benefit from being able to refer to all instances of a particular service
+with a single expression. See the `az_priority` switch to change this behavior.
+
 #### `az_priority` packing mode
 
 The packing behavior changes when the `az_priority` variable is set to `true`
-(default: `false`). In that case, the `base_cidr_blocks` now represent
+(default: `false`). In that case, the `summary_cidr_blocks` now represent
 availability zones, rather than per-name network aggregates which span
 availability zones. Each zone gets an evenly divided (subject to CIDR
 powers-of-two limitations) slice of the supplied `cidr_block`. Individual
@@ -113,7 +115,7 @@ module "subnets" {
 ```
 Outputs:
 ```
-base_cidr_blocks = {
+summary_cidr_blocks = {
   "us-east-2a" = "172.21.0.0/21"
   "us-east-2b" = "172.21.8.0/21"
 }

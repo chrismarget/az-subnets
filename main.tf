@@ -45,17 +45,17 @@ locals {
 module "base_networks" {
   source  = "hashicorp/subnets/cidr"
   version = "1.0.0"
-  base_cidr_block = var.cidr_block
+  summary_cidr_block = var.cidr_block
   networks = [ for i in range(length(local.base_network_bits)) : {name = local.base_network_names[i], new_bits = local.base_network_bits[i]} ]
 }
 
 // These instances of hashicorp-subnets-cidr (see
 // https://github.com/hashicorp/terraform-cidr-subnets)
-// chop each output.base_cidr_block individual subnet-sised peices.
+// chop each output.summary_cidr_block individual subnet-sised peices.
 module "subnet_networks" {
   for_each = module.base_networks.network_cidr_blocks
   source  = "hashicorp/subnets/cidr"
   version = "1.0.0"
-  base_cidr_block = each.value
+  summary_cidr_block = each.value
   networks = [ for i in range(length(local.subnet_network_bits)) : {name = local.subnet_network_names[i], new_bits = local.subnet_network_bits[i]} ]
 }

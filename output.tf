@@ -1,17 +1,17 @@
 //  with "var.az_priority = true", something like:
-//  base_cidr_blocks = {
+//  summary_cidr_blocks = {
 //    "us-east-2a" = "172.21.0.0/22"
 //    "us-east-2b" = "172.21.4.0/22"
 //    "us-east-2c" = "172.21.8.0/22"
 //  }
 //
 //  with "var.az_priority = true", something like:
-//  base_cidr_blocks = {
+//  summary_cidr_blocks = {
 //    "subnet_a" = "172.21.0.0/23"
 //    "subnet_b" = "172.21.2.0/26"
 //    "subnet_c" = "172.21.3.0/24"
 //  }
-output "base_cidr_blocks" {
+output "summary_cidr_blocks" {
   value = module.base_networks.network_cidr_blocks
 }
 
