@@ -148,3 +148,14 @@ subnets = [
   },
 ]
 ```
+#### Changing network later
+Because we're relying on the
+[terraform-cidr-subnets](https://github.com/hashicorp/terraform-cidr-subnets)
+module, the same
+[rules](https://github.com/hashicorp/terraform-cidr-subnets#changing-networks-later)
+about changing subnet allocations apply: The changes can be very disruptive
+because any subnet that's resized or moved will be replaced. Adding new subnets
+should be safe. Removing subnets, changing subnet sizes, and adding/removing
+availability zones may result in disruptive changes. Rather than removing a
+subnet, setting its name to `null` will cause it to be omitted from the output
+without reshuffling other allocations.
