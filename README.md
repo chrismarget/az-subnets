@@ -12,10 +12,10 @@ based on the VPC CIDR allocation size, rather than the desired subnet outcome.)
 availability zones according to a user-selectable aggregation/summarization
 strategy.
 
-No resources are created by this module. Rather, it provides an outputs 
-appropriate for use in something like an `aws_subnet` resource block's
-`for_each` meta-argument. The number of subnets planned by this module is the
-product of the counts of availability zones and named networks.
+No resources are created by this module. Rather, it provides outputs appropriate
+for use in something like an `aws_subnet` resource block's `for_each`
+meta-argument. The number of subnets planned by this module is the product of
+the counts of availability zones and named networks.
 
 #### Example usage
 
