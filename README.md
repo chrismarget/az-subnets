@@ -1,7 +1,6 @@
 ## az-subnets
 
-#### A terraform module for determining IP subnets across multiple availability
-zones.
+#### A terraform module for laying out IP subnets.
 
 This module is *mostly* a wrapper for Hashicorp's
 [terraform-cidr-subnets](https://github.com/hashicorp/terraform-cidr-subnets),
