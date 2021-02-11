@@ -119,6 +119,8 @@ summary_cidr_blocks = {
   "us-east-2a" = "172.21.0.0/21"
   "us-east-2b" = "172.21.8.0/21"
 }
+```
+```
 subnets = [
   {
     "az" = "us-east-2a"
