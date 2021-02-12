@@ -171,7 +171,7 @@ resource "aws_subnet" "web_tier" {
   count = length(local.web_tier_subnets)
   availability_zone = local.web_tier_subnets[count.index]["az"]
   cidr_block = local.web_tier_subnets[count.index]["cidr"]
-  vpc_id = aws_vpc.consul.id
+  vpc_id = "whatever"
 }
 ```
 #### Changing networks later
