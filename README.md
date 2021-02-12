@@ -12,10 +12,9 @@ based on the VPC CIDR allocation size, rather than the desired subnet outcome.)
 availability zones according to a user-selectable aggregation/summarization
 strategy.
 
-No resources are created by this module. Rather, it provides outputs appropriate
-for use in something like an `aws_subnet` resource block's `for_each`
-meta-argument. The number of subnets planned by this module is the product of
-the counts of availability zones and named networks.
+No resources are created by this module. Rather, it provides outputs which can
+be consumed when creating resources. The number of subnets planned by this
+module is the product of the counts of availability zones and named networks.
 
 #### Example usage
 
@@ -157,6 +156,23 @@ subnets = [
     "name" = "web_tier"
   },
 ]
+```
+
+#### Using the output
+Filter out the `web_tier` subnets:
+```
+locals {
+  web_tier_subnets = [ for x in module.subnets.subnets : x if x.name == "web_tier" ]
+}
+```
+Create the subnets using a loop:
+```
+resource "aws_subnet" "web_tier" {
+  count = length(local.web_tier_subnets)
+  availability_zone = local.web_tier_subnets[count.index]["az"]
+  cidr_block = local.web_tier_subnets[count.index]["cidr"]
+  vpc_id = aws_vpc.consul.id
+}
 ```
 #### Changing networks later
 Because we're relying on the
