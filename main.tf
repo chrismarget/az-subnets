@@ -27,7 +27,7 @@ locals {
   base_network_names = var.az_priority ? var.az_list : var.networks[*].name
 
   // list of names / bits of inner network specific subnets
-  subnet_network_bits = var.az_priority ? local.base_network_bits_by_subnet: local.base_network_bits_by_az
+  subnet_network_bits = var.az_priority ? local.base_network_bits_by_subnet : local.base_network_bits_by_az
   subnet_network_names = var.az_priority ? var.networks[*].name : var.az_list
 
   // output will be by "az" and "subnet" regardless of which is the inner/outer
