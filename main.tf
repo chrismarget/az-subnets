@@ -35,6 +35,9 @@ locals {
   // wrapper. set the labels accordingly.
   base_network_name   = var.az_priority ? "az" : "name"
   subnet_network_name = var.az_priority ? "name" : "az"
+
+  // see output.tf
+  output_subnets = flatten([ for i in keys(module.base_networks["network_cidr_blocks"]) : [ for j in keys(module.subnet_networks[i]["network_cidr_blocks"]) : {(local.base_network_name) = i, (local.subnet_network_name) = j, cidr = module.subnet_networks[i]["network_cidr_blocks"][j] } ] ])
 }
 
 // This instance of hashicorp-subnets-cidr (see

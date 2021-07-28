@@ -39,5 +39,5 @@ output "summary_cidr_blocks" {
 //    },
 //  ]
 output "subnets" {
-  value = flatten([ for i in keys(module.base_networks["network_cidr_blocks"]) : [ for j in keys(module.subnet_networks[i]["network_cidr_blocks"]) : {(local.base_network_name) = i, (local.subnet_network_name) = j, cidr = module.subnet_networks[i]["network_cidr_blocks"][j] } ] ])
+  value = local.output_subnets
 }
