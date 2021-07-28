@@ -41,3 +41,7 @@ output "summary_cidr_blocks" {
 output "subnets" {
   value = local.output_subnets
 }
+
+output "subnets_by_name_and_az" {
+  value = local.output_subnets_by_name_and_az
+}

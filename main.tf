@@ -38,6 +38,7 @@ locals {
 
   // see output.tf
   output_subnets = flatten([ for i in keys(module.base_networks["network_cidr_blocks"]) : [ for j in keys(module.subnet_networks[i]["network_cidr_blocks"]) : {(local.base_network_name) = i, (local.subnet_network_name) = j, cidr = module.subnet_networks[i]["network_cidr_blocks"][j] } ] ])
+  output_subnets_by_name_and_az = zipmap([ for i in local.output_subnets : "${i["name"]}${var.name_az_sep}${i["az"]}"], local.output_subnets)
 }
 
 // This instance of hashicorp-subnets-cidr (see
