@@ -21,71 +21,89 @@ module is the product of the counts of availability zones and named networks.
 ````
 module "subnets" {
   source     = "github.com/chrismarget/az-subnets"
-  az_list    = ["us-east-2a", "us-east-2b"]
-  cidr_block = "172.21.0.0/20"
-  networks   = [
-                 { name = "web_tier",  hosts = 10 },
-                 { name = "app_tier",  hosts = 28 },
-                 { name = "auth_tier", hosts = 3  },
-               ]
+  az_list         = ["us-east-1a", "us-east-1b"]
+  cidr_block      = "10.0.0.0/8"
+  ipv6_cidr_block = "2001:DB8::/56"
+  networks        = [
+    { name = "app-tier",  hosts = 28  },
+    { name = "auth_tier", hosts = 100 },
+    { name = "web-tier",  hosts = 10  },
+  ]
 }
 ````
 With these inputs the module begins by slicing three *minimally sized* chunks
-(`summary_cidr_blocks`) from the provided `cidr_block`. Each chunk is just big
-enough to hold all instances (one per availability zone) of each network. The
-result appears in the `summary_cidr_blocks` output:
+from the provided `cidr_block` and (optional) `ipv6_cidr_block`. Each chunk is
+just big enough to hold all instances (one per availability zone) of each
+network. The result appears in the `summary_cidr_blocks` output:
 ```
-summary_cidr_blocks = {
-  "app_tier" = "172.21.0.128/25"
-  "auth_tier" = "172.21.1.0/28"
-  "web_tier" = "172.21.0.0/27"
-}
+summary_cidr_blocks = tomap({
+  "app-tier" = "10.0.0.128/25"
+  "auth_tier" = "10.0.1.0/24"
+  "web-tier" = "10.0.0.0/27"
+})
 ```
+
 The `web_tier` network indicated a requirement for 10 hosts, so each instance
-will fit in a /28 (11 usable addresses). Because we specified two availability
-zones, a /27 (two /28s) was allocated for `web_tier`.
+will fit in a /28 (11 usable addresses after subtracting AWS reservations).
+Because we specified two availability zones, a /27 (two /28s) was allocated for
+`web_tier`.
 
 The `app_tier` network indicated a requirement for 28 hosts, which only fits in
 an AWS /26 (64 hosts) due to AWS reserving 5 addresses per subnet. Accordingly,
 a /25 (two /26s) was allocated for `app_tier`
 
-Each member of `summary_cidr_blocks` is further subdivided into individual subnets,
+The `summary_cidr_blocks_6` output works the same way, but won't allocate
+anything smaller than a /64. So each summary block is sized to hold two subnets:
+```
+summary_cidr_blocks_6 = tomap({
+  "app-tier" = "2001:db8:0:2::/63"
+  "auth_tier" = "2001:db8:0:4::/63"
+  "web-tier" = "2001:db8::/63"
+})
+```
+
+Each summary block is then further subdivided into individual subnets,
 available via the `subnets` output:
 
 ```
-subnets = [
-  {
-    "az" = "us-east-2a"
-    "cidr" = "172.21.0.128/26"
-    "name" = "app_tier"
-  },
-  {
-    "az" = "us-east-2b"
-    "cidr" = "172.21.0.192/26"
-    "name" = "app_tier"
-  },
-  {
-    "az" = "us-east-2a"
-    "cidr" = "172.21.1.0/29"
-    "name" = "auth_tier"
-  },
-  {
-    "az" = "us-east-2b"
-    "cidr" = "172.21.1.8/29"
-    "name" = "auth_tier"
-  },
-  {
-    "az" = "us-east-2a"
-    "cidr" = "172.21.0.0/28"
-    "name" = "web_tier"
-  },
-  {
-    "az" = "us-east-2b"
-    "cidr" = "172.21.0.16/28"
-    "name" = "web_tier"
-  },
-]
-
+subnets = {
+  "app-tier_us-east-1a" = {
+    "az"        = "us-east-1a"
+    "cidr"      = "10.0.1.0/25"
+    "ipv6_cidr" = "2001:db8:0:4::/64"
+    "name"      = "app-tier"
+  }
+  "app-tier_us-east-1b" = {
+    "az"        = "us-east-1b"
+    "cidr"      = "10.0.1.128/25"
+    "ipv6_cidr" = "2001:db8:0:5::/64"
+    "name"      = "app-tier"
+  }
+  "auth_tier_us-east-1a" = {
+    "az"        = "us-east-1a"
+    "cidr"      = "10.0.0.0/28"
+    "ipv6_cidr" = "2001:db8::/64"
+    "name"      = "auth_tier"
+  }
+  "auth_tier_us-east-1b" = {
+    "az"        = "us-east-1b"
+    "cidr"      = "10.0.0.16/28"
+    "ipv6_cidr" = "2001:db8:0:1::/64"
+    "name"      = "auth_tier"
+  }
+  "web-tier_us-east-1a" = {
+    "az"        = "us-east-1a"
+    "cidr"      = "10.0.0.128/26"
+    "ipv6_cidr" = "2001:db8:0:2::/64"
+    "name"      = "web-tier"
+  }
+  "web-tier_us-east-1b" = {
+    "az"        = "us-east-1b"
+    "cidr"      = "10.0.0.192/26"
+    "ipv6_cidr" = "2001:db8:0:3::/64"
+    "name"      = "web-tier"
+  }
+}
 ```
 This is an example of the default subnet packing behavior which seeks to place
 all instances of related subnets into adjacent address space. This placement
@@ -126,37 +144,45 @@ summary_cidr_blocks = {
 ```
 subnets = [
   {
-    "az" = "us-east-2a"
-    "cidr" = "172.21.0.64/26"
-    "name" = "app_tier"
+    "az"        = "us-east-2a"
+    "cidr"      = "172.21.0.64/26"
+    "ipv6_cidr" = ""
+    "name"      = "app_tier"
   },
   {
-    "az" = "us-east-2a"
-    "cidr" = "172.21.0.128/29"
-    "name" = "auth_tier"
+    "az"        = "us-east-2a"
+    "cidr"      = "172.21.0.128/29"
+    "ipv6_cidr" = ""
+    "name"      = "auth_tier"
   },
   {
-    "az" = "us-east-2a"
-    "cidr" = "172.21.0.0/28"
-    "name" = "web_tier"
+    "az"        = "us-east-2a"
+    "cidr"      = "172.21.0.0/28"
+    "ipv6_cidr" = ""
+    "name"      = "web_tier"
   },
   {
-    "az" = "us-east-2b"
-    "cidr" = "172.21.8.64/26"
-    "name" = "app_tier"
+    "az"        = "us-east-2b"
+    "cidr"      = "172.21.8.64/26"
+    "ipv6_cidr" = ""
+    "name"      = "app_tier"
   },
   {
-    "az" = "us-east-2b"
-    "cidr" = "172.21.8.128/29"
-    "name" = "auth_tier"
+    "az"        = "us-east-2b"
+    "cidr"      = "172.21.8.128/29"
+    "ipv6_cidr" = ""
+    "name". = "auth_tier"
   },
   {
-    "az" = "us-east-2b"
-    "cidr" = "172.21.8.0/28"
-    "name" = "web_tier"
+    "az"        = "us-east-2b"
+    "cidr"      = "172.21.8.0/28"
+    "ipv6_cidr" = ""
+    "name"      = "web_tier"
   },
 ]
 ```
+
+todo: complete the usage section for map output
 
 #### Using the output
 Filter out the `web_tier` subnets:
