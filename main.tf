@@ -91,37 +91,44 @@ locals {
   // v4/v6 subnet-based) depending on the az_priority variable.
   aggregate_network_bits_4  = var.az_priority ? local.network_bits_per_az : local.network_bits_per_subnet_4
   aggregate_network_bits_6  = var.az_priority ? local.network_bits_per_az : local.network_bits_per_subnet_6
-  //
-  // a list of wrapper names: either the AZ or the network name, depending on
-  // az_priority.
-  aggregate_network_names   = var.az_priority ? var.az_list : var.networks[*].name
 
   // choose the correct per-subnet bit list from above (either AZ-based or
   // v4/v6 subnet-based) depending on the az_priority variable.
   subnet_network_bits_4  = var.az_priority ? local.network_bits_per_subnet_4 : local.network_bits_per_az
   subnet_network_bits_6  = var.az_priority ? local.network_bits_per_subnet_6 : local.network_bits_per_az
+
   //
-  // a list of subnet names: either the AZ or network name, depending on
-  // az_priority.
-  subnet_network_names   = var.az_priority ? var.networks[*].name : var.az_list
+  // lists of aggregate and subnet names: Each is either the AZ or the network
+  // name, depending on az_priority.
+  aggregate_network_names = var.az_priority ? var.az_list : var.networks[*].name
+  subnet_network_names    = var.az_priority ? var.networks[*].name : var.az_list
 
-  // output will be by "az" and "subnet" regardless of which of those is the
-  // inner or outer wrapper (aggregate). set the labels accordingly.
-  aggregate_network_name = var.az_priority ? "az" : "name"
-  subnet_network_name    = var.az_priority ? "name" : "az"
+//  // output will be by "az" and "subnet" regardless of which of those is the
+//  // inner or outer wrapper (aggregate). set the labels accordingly.
+//  aggregate_network_type = var.az_priority ? "az" : "name"
+//  subnet_network_type    = var.az_priority ? "name" : "az"
 
-  // see output.tf
-  output_subnets_4 = flatten([ for i in keys(module.aggregate_networks_4["network_cidr_blocks"]) : [ for j in keys(module.subnet_networks_4[i]["network_cidr_blocks"]) : {(local.aggregate_network_name) = i, (local.subnet_network_name) = j, cidr = module.subnet_networks_4[i]["network_cidr_blocks"][j] } ] ])
-  output_subnets_6 = flatten([ for i in keys(module.aggregate_networks_6["network_cidr_blocks"]) : [ for j in keys(module.subnet_networks_6[i]["network_cidr_blocks"]) : {(local.aggregate_network_name) = i, (local.subnet_network_name) = j, cidr = module.subnet_networks_6[i]["network_cidr_blocks"][j] } ] ])
-  output_subnets_by_name_and_az = zipmap([ for i in local.output_subnets_4 : "${i["name"]}${var.name_az_sep}${i["az"]}"], local.output_subnets_4)
+//  output_subnets_4 = flatten([ for i in keys(module.aggregate_networks_4["network_cidr_blocks"]) : [ for j in keys(module.subnet_networks_4[i]["network_cidr_blocks"]) : {(local.aggregate_network_type) = i, (local.subnet_network_type) = j, cidr = module.subnet_networks_4[i]["network_cidr_blocks"][j] } ] ])
+//  output_subnets_6 = flatten([ for i in keys(module.aggregate_networks_6["network_cidr_blocks"]) : [ for j in keys(module.subnet_networks_6[i]["network_cidr_blocks"]) : {(local.aggregate_network_type) = i, (local.subnet_network_type) = j, cidr = module.subnet_networks_6[i]["network_cidr_blocks"][j] } ] ])
 
-  aggregate_name_list = flatten([for i in local.aggregate_network_names : [ for j in local.subnet_network_names : i]])
-  subnet_name_list    = flatten([for i in local.aggregate_network_names : [ for j in local.subnet_network_names : j]])
+  // full length list of aggregates and subnets.
+  // For example, With:
+  //   - 2 AZs
+  //   - 3 networks
+  //   - az_priority=false
+  //
+  //     aggregate_name_list = [ "net1", "net1", "net2", "net2", "net3", "net3" ]
+  //     subnet_name_list    = [ "az1",  "az1",  "az1",  "az2",  "az2",  "az2"  ]
+  aggregate_name_list = [for i in range(local.total_subnets) : local.aggregate_network_names[floor(i/length(local.subnet_network_names))]]
+  subnet_name_list    = [for i in range(local.total_subnets) : element(local.subnet_network_names, i)]
 
+  // Okay, so we made the aggregate/subnet lists above, but which is which?
   output_az_list      = var.az_priority ? local.aggregate_name_list : local.subnet_name_list
   output_network_list = var.az_priority ? local.subnet_name_list : local.aggregate_name_list
-  output_cidr_4_list  = flatten([ for i in keys(module.aggregate_networks_4["network_cidr_blocks"]) : [ for j in keys(module.subnet_networks_4[i]["network_cidr_blocks"]) : module.subnet_networks_4[i]["network_cidr_blocks"][j]]])
-  output_cidr_6_list  = flatten([ for i in keys(module.aggregate_networks_6["network_cidr_blocks"]) : [ for j in keys(module.subnet_networks_6[i]["network_cidr_blocks"]) : module.subnet_networks_6[i]["network_cidr_blocks"][j]]])
+
+  // list of CIDR blocks selected by the hashicorp/subnets/cidr modules.
+  output_cidr_4_list  = flatten([ for i in local.aggregate_network_names : [ for j in local.subnet_network_names : module.subnet_networks_4[i]["network_cidr_blocks"][j]]])
+  output_cidr_6_list  = flatten([ for i in local.aggregate_network_names : [ for j in local.subnet_network_names : module.subnet_networks_6[i]["network_cidr_blocks"][j]]])
 
   output_map_keys  = [for i in range(local.total_subnets) : "${local.output_network_list[i]}${var.name_az_sep}${local.output_az_list[i]}"]
   output_map_elems = [for i in range(local.total_subnets) : {
@@ -153,7 +160,7 @@ module "aggregate_networks_6" {
 
 // These instances of hashicorp-subnets-cidr (see
 // https://github.com/hashicorp/terraform-cidr-subnets)
-// chop each output.summary_cidr_block individual subnet-sised peices.
+// chop each aggregate_networks_4/6 into individual subnet-sized pieces.
 module "subnet_networks_4" {
   for_each = module.aggregate_networks_4.network_cidr_blocks
   source  = "hashicorp/subnets/cidr"
