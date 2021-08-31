@@ -97,19 +97,10 @@ locals {
   subnet_network_bits_4  = var.az_priority ? local.network_bits_per_subnet_4 : local.network_bits_per_az
   subnet_network_bits_6  = var.az_priority ? local.network_bits_per_subnet_6 : local.network_bits_per_az
 
-  //
   // lists of aggregate and subnet names: Each is either the AZ or the network
   // name, depending on az_priority.
   aggregate_network_names = var.az_priority ? var.az_list : var.networks[*].name
   subnet_network_names    = var.az_priority ? var.networks[*].name : var.az_list
-
-//  // output will be by "az" and "subnet" regardless of which of those is the
-//  // inner or outer wrapper (aggregate). set the labels accordingly.
-//  aggregate_network_type = var.az_priority ? "az" : "name"
-//  subnet_network_type    = var.az_priority ? "name" : "az"
-
-//  output_subnets_4 = flatten([ for i in keys(module.aggregate_networks_4["network_cidr_blocks"]) : [ for j in keys(module.subnet_networks_4[i]["network_cidr_blocks"]) : {(local.aggregate_network_type) = i, (local.subnet_network_type) = j, cidr = module.subnet_networks_4[i]["network_cidr_blocks"][j] } ] ])
-//  output_subnets_6 = flatten([ for i in keys(module.aggregate_networks_6["network_cidr_blocks"]) : [ for j in keys(module.subnet_networks_6[i]["network_cidr_blocks"]) : {(local.aggregate_network_type) = i, (local.subnet_network_type) = j, cidr = module.subnet_networks_6[i]["network_cidr_blocks"][j] } ] ])
 
   // full length list of aggregates and subnets.
   // For example, With:
